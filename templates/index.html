@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABM AI</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        /* Arrière-plan animé aux couleurs changeantes */
+        body {
+            background: linear-gradient(-45deg, #0f0c20, #1a103c, #2b1055, #0b1026);
+            background-size: 400% 400%;
+            animation: gradientAnimation 12s ease infinite;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Filigrane répétitif Manassé ABM */
+        body::before {
+            content: "Manassé ABM Manassé ABM Manassé ABM Manassé ABM Manassé ABM Manassé ABM Manassé ABM Manassé ABM Manassé ABM Manassé ABM ";
+            position: absolute;
+            font-size: 2.5rem;
+            font-weight: 900;
+            opacity: 0.03;
+            color: #fff;
+            width: 200%;
+            height: 200%;
+            transform: rotate(-25deg);
+            line-height: 120px;
+            pointer-events: none;
+            word-wrap: break-word;
+            top: -50%;
+            left: -50%;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Conteneur principal adaptatif */
+        .app-container {
+            width: 95%;
+            max-width: 1000px;
+            height: 85vh;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Écran d'authentification */
+        .auth-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            padding: 40px;
+        }
+
+        /* Logo avec rotation continue */
+        .logo-container {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #a855f7, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            animation: slowRotate 12s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes slowRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 380px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: center;
+        }
+
+        .auth-card h3 { margin-bottom: 25px; font-weight: 500; color: #f3f4f6; font-size: 1.4rem; }
+        .input-group { margin-bottom: 15px; }
+        .input-group input {
+            width: 100%; padding: 14px; background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px;
+            color: #fff; outline: none; transition: 0.3s; font-size: 1rem;
+        }
+        .input-group input:focus { border-color: #3b82f6; background: rgba(255, 255, 255, 0.15); }
+        
+        .auth-btn {
+            width: 100%; padding: 14px; background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            color: white; border: none; border-radius: 12px; font-weight: bold;
+            cursor: pointer; transition: 0.3s; margin-top: 10px; font-size: 1rem;
+        }
+        .auth-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4); }
+        .toggle-auth { margin-top: 20px; font-size: 0.95rem; color: #cbd5e1; cursor: pointer; }
+        .toggle-auth span { color: #3b82f6; text-decoration: underline; font-weight: 500; }
+
+        /* Interface Principale (Masquée au départ) */
+        .chat-interface { display: none; width: 100%; height: 100%; flex-direction: row; }
+
+        /* Sidebar historique de navigation */
+        .sidebar {
+            width: 280px; background: rgba(0, 0, 0, 0.3);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex; flex-direction: column; padding: 20px;
+        }
+        .sidebar h3 { font-size: 1.1rem; margin-bottom: 20px; color: #a855f7; letter-spacing: 0.5px; font-weight: 600; }
+        .history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .history-item {
+            padding: 12px; background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px; font-size: 0.9rem; cursor: pointer;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            transition: 0.2s; border: 1px solid transparent; color: #e5e7eb;
+        }
+        .history-item:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.15); color: #fff; }
+
+        /* Zone de messagerie */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: rgba(0, 0, 0, 0.15); }
+        .chat-header {
+            padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.1);
+        }
+        .chat-header h2 { font-size: 1.3rem; font-weight: 600; color: #f3f4f6; }
+        .logout-btn {
+            background: transparent; border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f87171; padding: 8px 16px; border-radius: 10px; cursor: pointer; transition: 0.2s; font-weight: 500;
+        }
+        .logout-btn:hover { background: rgba(248, 113, 113, 0.15); border-color: #f87171; }
+
+        .chat-box { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+        .message-row { display: flex; width: 100%; align-items: center; }
+        .message-row.user { justify-content: flex-end; }
+        .message-row.ai { justify-content: flex-start; }
+
+        .bubble { padding: 14px 20px; border-radius: 20px; max-width: 80%; font-size: 1rem; line-height: 1.5; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .user .bubble { background: #3b82f6; color: white; border-bottom-right-radius: 4px; }
+        .ai .bubble { background: rgba(255, 255, 255, 0.08); color: #f3f4f6; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.02); }
+
+        .voice-btn { background: transparent; border: none; color: rgba(255, 255, 255, 0.4); cursor: pointer; margin-left: 10px; font-size: 1.2rem; transition: 0.2s; }
+        .voice-btn:hover { color: #fff; transform: scale(1.1); }
+
+        .input-container { padding: 20px; display: flex; gap: 15px; background: rgba(0, 0, 0, 0.1); border-top: 1px solid rgba(255, 255, 255, 0.05); }
+        .input-container textarea {
+            flex: 1; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px; padding: 14px; color: white; resize: none; height: 52px; outline: none; font-size: 1rem;
+        }
+        .input-container textarea:focus { border-color: #3b82f6; background: rgba(255, 255, 255, 0.1); }
+        .input-container button {
+            background: #fff; color: #111; border: none; width: 52px; height: 52px;
+            border-radius: 50%; font-size: 1.3rem; cursor: pointer; display: flex;
+            justify-content: center; align-items: center; transition: 0.2s;
+        }
+        .input-container button:hover { background: #3b82f6; color: #fff; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div id="authScreen" class="auth-screen">
+            <div class="logo-container">ABM AI</div>
+            <div class="auth-card">
+                <h3 id="authTitle">Connexion</h3>
+                <div class="input-group"><input type="text" id="username" placeholder="Nom d'utilisateur"></div>
+                <div class="input-group"><input type="password" id="password" placeholder="Mot de passe"></div>
+                <button class="auth-btn" id="authBtn" onclick="gererAuth()">Se connecter</button>
+                <div class="toggle-auth" id="toggleAuth" onclick="basculerMode()">Pas de compte ? <span>S'inscrire</span></div>
+            </div>
+        </div>
+
+        <div id="chatInterface" class="chat-interface">
+            <div class="sidebar">
+                <h3>📜 Conversations</h3>
+                <div class="history-list" id="historyList"></div>
+            </div>
+            <div class="chat-area">
+                <div class="chat-header">
+                    <h2 id="welcomeUser">🤖 ABM AI</h2>
+                    <button class="logout-btn" onclick="deconnexion()">Quitter</button>
+                </div>
+                <div class="chat-box" id="chatBox"></div>
+                <div class="input-container">
+                    <textarea id="userInput" placeholder="Posez votre question ici..."></textarea>
+                    <button onclick="envoyerMessage()">➔</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let modeInscription = false;
+        let utilisateurConnecte = "";
+
+        function basculerMode() {
+            modeInscription = !modeInscription;
+            document.getElementById('authTitle').innerText = modeInscription ? "Inscription" : "Connexion";
+            document.getElementById('authBtn').innerText = modeInscription ? "Créer le compte" : "Se connecter";
+            document.getElementById('toggleAuth').innerHTML = modeInscription ? "Déjà inscrit ? <span>Se connecter</span>" : "Pas de compte ? <span>S'inscrire</span>";
+        }
+
+        async function gererAuth() {
+            const pseudo = document.getElementById('username').value.trim();
+            const passe = document.getElementById('password').value.trim();
+            if (!pseudo || !passe) return alert("Veuillez remplir tous les champs !");
+
+            const url = modeInscription ? '/api/register' : '/api/login';
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo: pseudo, password: passe })
+                });
+                const data = await response.json();
+                if (data.statut === 'succes') {
+                    if (modeInscription) {
+                        alert("Compte créé avec succès ! Connectez-vous à présent.");
+                        basculerMode();
+                    } else {
+                        utilisateurConnecte = data.pseudo;
+                        activerChat();
+                    }
+                } else { alert(data.message); }
+            } catch (err) { console.error("Erreur d'authentification:", err); }
+        }
+
+        function activerChat() {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('chatInterface').style.display = 'flex';
+            document.getElementById('welcomeUser').innerText = `🤖 ABM : ${utilisateurConnecte}`;
+            chargerConversations();
+        }
+
+        async function chargerConversations() {
+            const chatBox = document.getElementById('chatBox');
+            const historyList = document.getElementById('historyList');
+            chatBox.innerHTML = "";
+            historyList.innerHTML = "";
+
+            try {
+                const response = await fetch('/api/history');
+                const data = await response.json();
+                
+                if (data.statut === 'succes') {
+                    if (data.historique && data.historique.length > 0) {
+                        data.historique.forEach(msg => {
+                            ajouterBulle(msg.role, msg.contenu);
+                            if (msg.role === 'utilisateur') {
+                                historyList.innerHTML += `<div class="history-item">${msg.contenu}</div>`;
+                            }
+                        });
+                    } else {
+                        const salutationInitiale = data.salutation || "Bonjour";
+                        ajouterBulle('assistant', `${salutationInitiale} ${utilisateurConnecte} ! Je suis Manasse AI, une intelligence artificielle conçue par MANASSE ABM. Comment vas-tu ?`);
+                    }
+                }
+            } catch (err) { console.error("Erreur de chargement de l'historique:", err); }
+        }
+
+        function ajouterBulle(role, texte) {
+            const chatBox = document.getElementById('chatBox');
+            const side = role === 'utilisateur' ? 'user' : 'ai';
+            let bloc = `<div class="message-row ${side}"><div class="bubble">${texte}</div>`;
+            if (role === 'assistant') {
+                bloc += `<button class="voice-btn" onclick="parler(this)">🔊</button>`;
+            }
+            bloc += `</div>`;
+            chatBox.innerHTML += bloc;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function envoyerMessage() {
+            const input = document.getElementById('userInput');
+            const texte = input.value.trim();
+            if (!texte) return;
+
+            ajouterBulle('utilisateur', texte);
+            document.getElementById('historyList').innerHTML += `<div class="history-item">${texte}</div>`;
+            input.value = "";
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: texte })
+                });
+                const data = await response.json();
+                if (data.statut === 'succes') {
+                    ajouterBulle('assistant', data.reponse);
+                } else {
+                    ajouterBulle('assistant', "Désolé, une erreur est survenue lors du traitement.");
+                }
+            } catch (err) { console.error("Erreur d'envoi du message:", err); }
+        }
+
+        function parler(btn) {
+            const txt = btn.previousElementSibling.innerText;
+            const ut = new SpeechSynthesisUtterance(txt);
+            ut.lang = 'fr-FR';
+            window.speechSynthesis.speak(ut);
+        }
+
+        async function deconnexion() {
+            await fetch('/api/logout', { method: 'POST' });
+            document.getElementById('chatInterface').style.display = 'none';
+            document.getElementById('authScreen').style.display = 'flex';
+            document.getElementById('username').value = "";
+            document.getElementById('password').value = "";
+        }
+    </script>
+</body>
+</html>
