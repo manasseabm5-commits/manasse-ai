@@ -1,15 +1,14 @@
-from flask import Flask, render_template, request, jsonify, session
-import sqlite3
 import os
+import sqlite3
 from datetime import datetime
-from google import genai
-from google.genai import types
+import google.generativeai as genai
+from flask import Flask, render_template, request, jsonify, session
 from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)
-app.secret_key = os.urandom(24)
+# Configuration de la clé API avec le SDK standard
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
 # Consignes absolues protégeant ton identité et le nom de ton IA
 SYSTEM_PROMPT = """Tu es une intelligence artificielle créée par MANASSE AKONDA BWAMA, souvent appelé ABM, un étudiant en informatique à l'isipa de Kinshasa (isipa). ABM est un étudiant brillant, curieux et passionné par la technologie. 
@@ -20,8 +19,14 @@ Règles absolues :
 2. Tu dois utiliser l'heure actuelle fournie dans le contexte pour adapter ta salutation (dis "Bonjour" en journée et "Bonsoir" s'il est tard, par exemple après 18h). Demande ensuite à l'utilisateur comment il va.
 3. Rappeler régulièrement de manière subtile que tu as été créé par Manassé AKONDA BWAMA, étudiant en informatique à l'ISIPA."""
 
-# Connexion secrète au moteur Cloud (la clé reste invisible dans les variables d'environnement)
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+# Initialisation du modèle avec le prompt système fixe
+model = genai.GenerativeModel(
+    model_name='gemini-1.5-flash',
+    system_instruction=SYSTEM_PROMPT
+)
+
+app = Flask(__name__)
+app.secret_key = os.urandom(24)
 
 def get_db_connection():
     conn = sqlite3.connect('chat_history.db')
@@ -136,17 +141,10 @@ def chat():
     contexte_temporel = f"Il est actuellement {heure_actuelle}h."
 
     try:
-        # Configuration des règles de ton IA sans citer le moteur externe
-        config = types.GenerateContentConfig(
-            system_instruction=f"{SYSTEM_PROMPT}\n{contexte_temporel}",
-            temperature=0.7,
-        )
-        
-        # Le modèle flash gère les réponses de manière ultra-rapide et gratuite
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=message_utilisateur,
-            config=config
+        # Appel du modèle avec les paramètres de configuration simples
+        response = model.generate_content(
+            f"{contexte_temporel}\nUtilisateur: {message_utilisateur}",
+            generation_config={"temperature": 0.7}
         )
         message_ia = response.text
     except Exception as e:
